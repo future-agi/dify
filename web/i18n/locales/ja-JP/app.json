@@ -308,5 +308,7 @@
   "types.all": "全て",
   "types.chatbot": "チャットボット",
   "types.completion": "テキスト生成",
-  "types.workflow": "ワークフロー"
+  "types.workflow": "ワークフロー",
+  "tracing.futureagi.title": "Future AGI",
+  "tracing.futureagi.description": "Send app traces to Future AGI. Self-hosted Dify only; not available on Dify Cloud until this provider is in an upstream release."
 }

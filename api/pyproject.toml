@@ -100,6 +100,7 @@ dify-trace-mlflow = { workspace = true }
 dify-trace-opik = { workspace = true }
 dify-trace-tencent = { workspace = true }
 dify-trace-weave = { workspace = true }
+dify-trace-futureagi = { workspace = true }
 
 [tool.uv]
 default-groups = ["kms", "storage", "tools", "vdb-all", "trace-all"]
@@ -296,6 +297,7 @@ trace-all = [
     "dify-trace-opik",
     "dify-trace-tencent",
     "dify-trace-weave",
+    "dify-trace-futureagi",
 ]
 trace-aliyun = ["dify-trace-aliyun"]
 trace-arize-phoenix = ["dify-trace-arize-phoenix"]
@@ -305,6 +307,7 @@ trace-mlflow = ["dify-trace-mlflow"]
 trace-opik = ["dify-trace-opik"]
 trace-tencent = ["dify-trace-tencent"]
 trace-weave = ["dify-trace-weave"]
+trace-futureagi = ["dify-trace-futureagi"]
 
 [tool.pyrefly]
 project-includes = ["."]

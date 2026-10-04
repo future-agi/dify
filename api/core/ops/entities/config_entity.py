@@ -16,6 +16,7 @@ class TracingProviderEnum(StrEnum):
     MLFLOW = "mlflow"
     DATABRICKS = "databricks"
     TENCENT = "tencent"
+    FUTUREAGI = "futureagi"
 
 
 class BaseTracingConfig(BaseModel):

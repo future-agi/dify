@@ -12,6 +12,7 @@ import type {
   PhoenixConfig,
   TencentConfig,
   WeaveConfig,
+  FutureAGIConfig,
 } from './type'
 import type { TracingStatus } from '@/models/app'
 import { cn } from '@langgenius/dify-ui/cn'
@@ -81,6 +82,7 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
     [TracingProvider.mlflow]: 'i-custom-public-tracing-mlflow-icon w-11',
     [TracingProvider.databricks]: 'i-custom-public-tracing-databricks-icon w-25',
     [TracingProvider.tencent]: 'i-custom-public-tracing-tencent-icon w-20',
+    [TracingProvider.futureagi]: '',
   }
   const inUseProviderIconClassName = inUseTracingProvider
     ? providerIconClassMap[inUseTracingProvider]
@@ -96,6 +98,7 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
   const [mlflowConfig, setMLflowConfig] = useState<MLflowConfig | null>(null)
   const [databricksConfig, setDatabricksConfig] = useState<DatabricksConfig | null>(null)
   const [tencentConfig, setTencentConfig] = useState<TencentConfig | null>(null)
+  const [futureagiConfig, setFutureAGIConfig] = useState<FutureAGIConfig | null>(null)
   const hasConfiguredTracing = !!(
     langSmithConfig ||
     langFuseConfig ||
@@ -106,7 +109,8 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
     aliyunConfig ||
     mlflowConfig ||
     databricksConfig ||
-    tencentConfig
+    tencentConfig ||
+    futureagiConfig
   )
 
   const fetchTracingConfig = async () => {
@@ -160,6 +164,11 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
         await doFetchTracingConfig({ appId, provider: TracingProvider.tencent })
       if (!tencentHasNotConfig) setTencentConfig(tencentConfig as TencentConfig)
     }
+    const getFutureAGIConfig = async () => {
+      const { tracing_config: futureagiConfig, has_not_configured: futureagiHasNotConfig } =
+        await doFetchTracingConfig({ appId, provider: TracingProvider.futureagi })
+      if (!futureagiHasNotConfig) setFutureAGIConfig(futureagiConfig as FutureAGIConfig)
+    }
     Promise.all([
       getArizeConfig(),
       getPhoenixConfig(),
@@ -171,6 +180,7 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
       getMLflowConfig(),
       getDatabricksConfig(),
       getTencentConfig(),
+      getFutureAGIConfig(),
     ])
   }
 
@@ -187,6 +197,8 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
     else if (provider === TracingProvider.weave) setWeaveConfig(tracing_config as WeaveConfig)
     else if (provider === TracingProvider.aliyun) setAliyunConfig(tracing_config as AliyunConfig)
     else if (provider === TracingProvider.tencent) setTencentConfig(tracing_config as TencentConfig)
+    else if (provider === TracingProvider.futureagi)
+      setFutureAGIConfig(tracing_config as FutureAGIConfig)
   }
 
   const handleTracingConfigRemoved = (provider: TracingProvider) => {
@@ -200,6 +212,7 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
     else if (provider === TracingProvider.mlflow) setMLflowConfig(null)
     else if (provider === TracingProvider.databricks) setDatabricksConfig(null)
     else if (provider === TracingProvider.tencent) setTencentConfig(null)
+    else if (provider === TracingProvider.futureagi) setFutureAGIConfig(null)
     if (provider === inUseTracingProvider) {
       handleTracingStatusChange(
         {
@@ -251,6 +264,7 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
           mlflowConfig={mlflowConfig}
           databricksConfig={databricksConfig}
           tencentConfig={tencentConfig}
+          futureagiConfig={futureagiConfig}
           onConfigUpdated={handleTracingConfigUpdated}
           onConfigRemoved={handleTracingConfigRemoved}
         >
@@ -292,6 +306,7 @@ const Panel: FC<PanelProps> = ({ appId, readOnly }) => {
           mlflowConfig={mlflowConfig}
           databricksConfig={databricksConfig}
           tencentConfig={tencentConfig}
+          futureagiConfig={futureagiConfig}
           onConfigUpdated={handleTracingConfigUpdated}
           onConfigRemoved={handleTracingConfigRemoved}
         >

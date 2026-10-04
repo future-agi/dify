@@ -28,6 +28,11 @@ class UnifiedTraceProviderConfigMap(collections.UserDict[str, UnifiedProviderCon
                 from dify_trace_langsmith.unified_trace import UnifiedLangSmithTrace
 
                 return {"config_class": LangSmithConfig, "trace_instance": UnifiedLangSmithTrace}
+            case TracingProviderEnum.FUTUREAGI:
+                from dify_trace_futureagi.config import FutureAGIConfig
+                from dify_trace_futureagi.unified_trace import UnifiedFutureAGITrace
+
+                return {"config_class": FutureAGIConfig, "trace_instance": UnifiedFutureAGITrace}
             case _:
                 raise KeyError(f"Unified tracing provider is not registered: {key}")
 
