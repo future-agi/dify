@@ -5,7 +5,6 @@ accepts. Does not retarget the Phoenix provider and does not import traceAI.
 """
 
 from typing import cast
-from urllib.parse import urlparse
 
 from opentelemetry.context import Context
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -28,7 +27,7 @@ from core.ops.unified_trace.parent_context import (
 from core.ops.unified_trace.provider import ParentContextPublisher, UnifiedTraceInstance
 from core.ops.unified_trace.trace_builder import CanonicalTraceBuilder, RepositoryWorkflowExecutionLoader
 from dify_trace_futureagi.config import FutureAGIConfig
-from dify_trace_futureagi.defaults import COLLECTOR_PATH
+from dify_trace_futureagi.defaults import collector_endpoint
 from dify_trace_futureagi.span_input import SpanInput, SpanKind, SpanStatus, TraceInput
 from dify_trace_futureagi.mapping import (
     auth_headers,
@@ -65,12 +64,6 @@ def _trace_input(trace: CanonicalTrace) -> TraceInput:
         session_id=trace.session_id,
         spans=tuple(_span_input(span) for span in trace.spans),
     )
-
-
-def collector_endpoint(endpoint: str) -> str:
-    """fi-collector serves OTLP/HTTP at /tracer/v1/traces, not the standard /v1/traces."""
-    parsed = urlparse(endpoint)
-    return f"{parsed.scheme}://{parsed.netloc}{parsed.path.rstrip('/')}{COLLECTOR_PATH}"
 
 
 def setup_unified_tracer(config: FutureAGIConfig) -> tuple[trace_sdk.Tracer, OTLPSpanExporter]:

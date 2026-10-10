@@ -93,14 +93,14 @@ class TestMapping:
         assert "openinference.project.name" not in attributes
 
     def test_collector_path(self):
-        from urllib.parse import urlparse
+        from dify_trace_futureagi.defaults import collector_endpoint
 
-        def endpoint(value: str) -> str:
-            parsed = urlparse(value)
-            return f"{parsed.scheme}://{parsed.netloc}{parsed.path.rstrip('/')}{COLLECTOR_PATH}"
-
-        assert endpoint(DEFAULT_ENDPOINT) == f"{DEFAULT_ENDPOINT}{COLLECTOR_PATH}"
-        assert endpoint("https://example.com/base/") == f"https://example.com/base{COLLECTOR_PATH}"
+        assert collector_endpoint(DEFAULT_ENDPOINT) == f"{DEFAULT_ENDPOINT}{COLLECTOR_PATH}"
+        assert collector_endpoint("https://example.com/base/") == f"https://example.com/base{COLLECTOR_PATH}"
+        assert (
+            collector_endpoint("https://api.futureagi.com/tracer/v1/traces")
+            == "https://api.futureagi.com/tracer/v1/traces"
+        )
 
     def test_one_span_per_message(self):
         assert len(_trace(_span(inputs={"chunks": ["a", "b", "c"]})).spans) == 1
