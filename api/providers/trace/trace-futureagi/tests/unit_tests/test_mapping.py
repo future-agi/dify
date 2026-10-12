@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from dify_trace_futureagi.defaults import COLLECTOR_PATH, DEFAULT_ENDPOINT
 from dify_trace_futureagi.mapping import (
     auth_headers,
+    llm_message_attributes,
     resource_attributes,
     span_attributes,
     span_status,
@@ -13,18 +15,18 @@ from opentelemetry.trace import StatusCode
 
 
 def _span(**overrides) -> SpanInput:
-    values = dict(
-        id="span-1",
-        parent_id=None,
-        name="dify.message",
-        kind=SpanKind.LLM,
-        start_time=datetime(2026, 10, 4, tzinfo=UTC),
-        end_time=datetime(2026, 10, 4, 0, 0, 1, tzinfo=UTC),
-        inputs={"query": "hello"},
-        outputs={"answer": "world"},
-        status=SpanStatus.OK,
-        metadata={"app_id": "app-1", "user_id": "user-1", "model_name": "gpt", "prompt_tokens": 3},
-    )
+    values: dict[str, Any] = {
+        "id": "span-1",
+        "parent_id": None,
+        "name": "dify.message",
+        "kind": SpanKind.LLM,
+        "start_time": datetime(2026, 10, 4, tzinfo=UTC),
+        "end_time": datetime(2026, 10, 4, 0, 0, 1, tzinfo=UTC),
+        "inputs": {"query": "hello"},
+        "outputs": {"answer": "world"},
+        "status": SpanStatus.OK,
+        "metadata": {"app_id": "app-1", "user_id": "user-1", "model_name": "gpt", "prompt_tokens": 3},
+    }
     values.update(overrides)
     return SpanInput(**values)
 
@@ -104,3 +106,72 @@ class TestMapping:
 
     def test_one_span_per_message(self):
         assert len(_trace(_span(inputs={"chunks": ["a", "b", "c"]})).spans) == 1
+
+    def test_chain_span_does_not_repeat_model_or_tokens(self):
+        """fi-collector sums tokens over every span in a session; a CHAIN copy would double them."""
+        span = _span(kind=SpanKind.CHAIN, metadata={"model_name": "gpt", "prompt_tokens": 3, "completion_tokens": 4})
+        attributes = span_attributes(span, _trace(span), redact=False)
+        assert not [key for key in attributes if key.startswith("llm.")]
+
+    def test_chatflow_message_llm_span_does_not_repeat_workflow_usage(self):
+        metadata = {"workflow_run_id": "run-1", "prompt_tokens": 112, "completion_tokens": 71}
+        span = _span(synthetic=True, metadata=metadata)
+        attributes = span_attributes(span, _trace(span), redact=False)
+        assert "llm.token_count.prompt" not in attributes
+        assert "llm.token_count.completion" not in attributes
+
+    def test_chat_app_message_llm_span_keeps_its_usage(self):
+        span = _span(synthetic=True, metadata={"workflow_run_id": None, "prompt_tokens": 9, "completion_tokens": 2})
+        attributes = span_attributes(span, _trace(span), redact=False)
+        assert attributes["llm.token_count.prompt"] == 9
+        assert attributes["llm.token_count.completion"] == 2
+
+    def test_empty_session_is_omitted(self):
+        span = _span()
+        attributes = span_attributes(span, TraceInput(trace_id="trace-1", session_id="", spans=(span,)), redact=False)
+        assert "session.id" not in attributes
+        assert "gen_ai.conversation.id" not in attributes
+
+    def test_llm_span_exports_chat_messages(self):
+        prompts = [
+            {"role": "system", "text": "Be brief.", "files": []},
+            {"role": "user", "text": "What time is it?", "files": []},
+            {
+                "role": "assistant",
+                "text": "",
+                "tool_calls": [
+                    {"id": "call-1", "type": "function", "function": {"name": "current_time", "arguments": "{}"}}
+                ],
+            },
+            {"role": "tool", "text": "2026-10-12 03:50:42", "files": []},
+        ]
+        span = _span(inputs=prompts, outputs={"text": "It is 03:50 UTC.", "usage": {"prompt_tokens": 3}})
+        attributes = span_attributes(span, _trace(span), redact=False)
+        assert attributes["llm.input_messages.0.message.role"] == "system"
+        assert attributes["llm.input_messages.0.message.content"] == "Be brief."
+        assert attributes["llm.input_messages.1.message.content"] == "What time is it?"
+        call = "llm.input_messages.2.message.tool_calls.0.tool_call"
+        assert attributes[f"{call}.id"] == "call-1"
+        assert attributes[f"{call}.function.name"] == "current_time"
+        assert attributes[f"{call}.function.arguments"] == "{}"
+        assert attributes["llm.input_messages.3.message.role"] == "tool"
+        assert attributes["llm.output_messages.0.message.role"] == "assistant"
+        assert attributes["llm.output_messages.0.message.content"] == "It is 03:50 UTC."
+
+    def test_llm_messages_accept_a_bare_query_and_answer(self):
+        attributes = llm_message_attributes("hello", "world")
+        assert attributes["llm.input_messages.0.message.role"] == "user"
+        assert attributes["llm.input_messages.0.message.content"] == "hello"
+        assert attributes["llm.output_messages.0.message.content"] == "world"
+        assert llm_message_attributes("", None) == {}
+
+    def test_redact_omits_chat_messages(self):
+        span = _span(inputs=[{"role": "user", "text": "secret"}], outputs={"text": "secret answer"})
+        attributes = span_attributes(span, _trace(span), redact=True)
+        assert not [key for key in attributes if "messages" in key]
+        assert "secret" not in str(attributes)
+
+    def test_non_llm_spans_carry_no_chat_messages(self):
+        span = _span(kind=SpanKind.TOOL, inputs={"format": "%H"}, outputs={"text": "03"})
+        attributes = span_attributes(span, _trace(span), redact=False)
+        assert not [key for key in attributes if "messages" in key]

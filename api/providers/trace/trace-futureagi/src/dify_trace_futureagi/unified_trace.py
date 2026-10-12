@@ -28,7 +28,6 @@ from core.ops.unified_trace.provider import ParentContextPublisher, UnifiedTrace
 from core.ops.unified_trace.trace_builder import CanonicalTraceBuilder, RepositoryWorkflowExecutionLoader
 from dify_trace_futureagi.config import FutureAGIConfig
 from dify_trace_futureagi.defaults import collector_endpoint
-from dify_trace_futureagi.span_input import SpanInput, SpanKind, SpanStatus, TraceInput
 from dify_trace_futureagi.mapping import (
     auth_headers,
     nanos,
@@ -37,6 +36,7 @@ from dify_trace_futureagi.mapping import (
     span_status,
     trace_id_from_message_id,
 )
+from dify_trace_futureagi.span_input import SpanInput, SpanKind, SpanStatus, TraceInput
 from extensions.ext_redis import redis_client
 
 EXPORT_TIMEOUT_SECONDS = 10
@@ -55,6 +55,7 @@ def _span_input(canonical_span: CanonicalSpan) -> SpanInput:
         status=SpanStatus(canonical_span.status.value),
         error=canonical_span.error,
         metadata=dict(canonical_span.metadata),
+        synthetic=canonical_span.synthetic,
     )
 
 
@@ -167,9 +168,7 @@ class UnifiedFutureAGIAdapter:
         except Exception as error:
             raise RetryableTraceDispatchError("Future AGI span export failed") from error
         if export_result is not SpanExportResult.SUCCESS:
-            raise RetryableTraceDispatchError(
-                f"Future AGI span export failed: canonical_span_id={canonical_span_id}"
-            )
+            raise RetryableTraceDispatchError(f"Future AGI span export failed: canonical_span_id={canonical_span_id}")
 
 
 class UnifiedFutureAGITrace(UnifiedTraceInstance):

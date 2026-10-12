@@ -37,6 +37,7 @@ class SpanInput:
     status: SpanStatus
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    synthetic: bool = False
 
 
 @dataclass(frozen=True)
