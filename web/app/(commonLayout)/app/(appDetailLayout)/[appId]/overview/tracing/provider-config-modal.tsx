@@ -4,6 +4,7 @@ import type {
   AliyunConfig,
   ArizeConfig,
   DatabricksConfig,
+  FutureAGIConfig,
   LangFuseConfig,
   LangSmithConfig,
   MLflowConfig,
@@ -11,7 +12,6 @@ import type {
   PhoenixConfig,
   TencentConfig,
   WeaveConfig,
-  FutureAGIConfig,
 } from './type'
 import {
   AlertDialog,
@@ -25,6 +25,7 @@ import {
 import { Button } from '@langgenius/dify-ui/button'
 import { Dialog, DialogContent } from '@langgenius/dify-ui/dialog'
 import { Separator } from '@langgenius/dify-ui/separator'
+import { Switch } from '@langgenius/dify-ui/switch'
 import { useBoolean } from 'ahooks'
 import * as React from 'react'
 import { useCallback, useState } from 'react'
@@ -702,6 +703,16 @@ const ProviderConfigModal: FC<Props> = ({
                           onChange={handleConfigChange('endpoint')}
                           placeholder="https://api.futureagi.com"
                         />
+                        <div className="flex items-center justify-between py-1.75">
+                          <span className="text-sm font-medium text-text-primary">
+                            Redact inputs and outputs
+                          </span>
+                          <Switch
+                            aria-label="Redact inputs and outputs"
+                            checked={!!(config as FutureAGIConfig).redact}
+                            onCheckedChange={(checked) => setConfig({ ...config, redact: checked })}
+                          />
+                        </div>
                       </>
                     )}
                     {type === TracingProvider.opik && (

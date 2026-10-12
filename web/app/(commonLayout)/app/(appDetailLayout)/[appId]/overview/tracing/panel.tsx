@@ -5,6 +5,7 @@ import type {
   AliyunConfig,
   ArizeConfig,
   DatabricksConfig,
+  FutureAGIConfig,
   LangFuseConfig,
   LangSmithConfig,
   MLflowConfig,
@@ -12,7 +13,6 @@ import type {
   PhoenixConfig,
   TencentConfig,
   WeaveConfig,
-  FutureAGIConfig,
 } from './type'
 import type { TracingStatus } from '@/models/app'
 import { cn } from '@langgenius/dify-ui/cn'

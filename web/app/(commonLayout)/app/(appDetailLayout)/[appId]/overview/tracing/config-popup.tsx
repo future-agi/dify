@@ -4,6 +4,7 @@ import type {
   AliyunConfig,
   ArizeConfig,
   DatabricksConfig,
+  FutureAGIConfig,
   LangFuseConfig,
   LangSmithConfig,
   MLflowConfig,
@@ -11,7 +12,6 @@ import type {
   PhoenixConfig,
   TencentConfig,
   WeaveConfig,
-  FutureAGIConfig,
 } from './type'
 import { cn } from '@langgenius/dify-ui/cn'
 import { Separator } from '@langgenius/dify-ui/separator'
@@ -446,6 +446,7 @@ const ConfigPopup: FC<PopupProps> = ({
               {phoenixPanel}
               {aliyunPanel}
               {tencentPanel}
+              {futureagiPanel}
             </div>
           </>
         ) : (
