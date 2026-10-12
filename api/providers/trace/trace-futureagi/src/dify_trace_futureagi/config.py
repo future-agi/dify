@@ -29,3 +29,9 @@ class FutureAGIConfig(BaseTracingConfig):
     @classmethod
     def endpoint_validator(cls, v, info: ValidationInfo):
         return validate_url_with_path(v, DEFAULT_ENDPOINT)
+
+    @field_validator("redact", mode="before")
+    @classmethod
+    def redact_validator(cls, v: object) -> object:
+        # OpsTraceManager stores a missing other_key as "", which is not a bool.
+        return False if v is None or v == "" else v
