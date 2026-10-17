@@ -7,6 +7,7 @@ accepts. Does not retarget the Phoenix provider and does not import traceAI.
 from typing import cast
 
 from opentelemetry.context import Context
+from opentelemetry.exporter.otlp.proto.http import Compression
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.sdk.resources import Resource
@@ -28,13 +29,13 @@ from core.ops.unified_trace.provider import ParentContextPublisher, UnifiedTrace
 from core.ops.unified_trace.trace_builder import CanonicalTraceBuilder, RepositoryWorkflowExecutionLoader
 from dify_trace_futureagi.config import FutureAGIConfig
 from dify_trace_futureagi.defaults import collector_endpoint
+from dify_trace_futureagi.ids import StableIdGenerator, next_ids, stable_span_id, stable_trace_id
 from dify_trace_futureagi.mapping import (
     auth_headers,
     nanos,
     resource_attributes,
     span_attributes,
     span_status,
-    trace_id_from_message_id,
 )
 from dify_trace_futureagi.span_input import SpanInput, SpanKind, SpanStatus, TraceInput
 from extensions.ext_redis import redis_client
@@ -68,13 +69,21 @@ def _trace_input(trace: CanonicalTrace) -> TraceInput:
 
 
 def setup_unified_tracer(config: FutureAGIConfig) -> tuple[trace_sdk.Tracer, OTLPSpanExporter]:
-    """An isolated tracer. Never calls set_tracer_provider, so two apps stay separate."""
+    """An isolated tracer. Never calls set_tracer_provider, so two apps stay separate.
+
+    Compression is pinned to none: fi-collector rejects gzip bodies, and an operator's
+    OTEL_EXPORTER_OTLP_COMPRESSION for Dify's own telemetry must not switch it on here.
+    """
     exporter = OTLPSpanExporter(
         endpoint=collector_endpoint(config.endpoint),
         headers=dict(auth_headers(config.api_key, config.secret_key)),
         timeout=EXPORT_TIMEOUT_SECONDS,
+        compression=Compression.NoCompression,
     )
-    provider = trace_sdk.TracerProvider(resource=Resource(attributes=resource_attributes(config.project or "")))
+    provider = trace_sdk.TracerProvider(
+        resource=Resource(attributes=resource_attributes(config.project or "")),
+        id_generator=StableIdGenerator(),
+    )
     return cast(trace_sdk.Tracer, provider.get_tracer(f"unified_futureagi_{config.project}")), exporter
 
 
@@ -117,27 +126,33 @@ class UnifiedFutureAGIAdapter:
     ) -> None:
         span_by_id: dict[str, Span] = {}
         root_context = self._root_context(parent)
+        root_name = next((span.name for span in trace.spans if span.id == trace.root_span_id), "")
         for canonical_span in trace.spans:
-            self._emit_span(canonical_span, trace, span_by_id, root_context, publish_parent_context)
+            self._emit_span(canonical_span, trace, root_name, span_by_id, root_context, publish_parent_context)
 
     def _emit_span(
         self,
         canonical_span: CanonicalSpan,
         trace: CanonicalTrace,
+        root_name: str,
         span_by_id: dict[str, Span],
         root_context: Context | None,
         publish_parent_context: ParentContextPublisher,
     ) -> None:
         local_parent = span_by_id.get(canonical_span.parent_id or "")
         context = set_span_in_context(local_parent) if local_parent is not None else root_context
-        span = self._tracer.start_span(
-            name=canonical_span.name,
-            context=context,
-            attributes=span_attributes(_span_input(canonical_span), _trace_input(trace), redact=self._config.redact),
-            start_time=nanos(canonical_span.start_time),
-        )
+        # Ids derived from Dify's ids: a retried dispatch overwrites the spans it already sent.
+        with next_ids(stable_trace_id(trace.trace_id), stable_span_id(trace.trace_id, root_name, canonical_span.id)):
+            span = self._tracer.start_span(
+                name=canonical_span.name,
+                context=context,
+                attributes=span_attributes(
+                    _span_input(canonical_span), _trace_input(trace), redact=self._config.redact
+                ),
+                start_time=nanos(canonical_span.start_time),
+            )
         span_by_id[canonical_span.id] = span
-        status_code, description = span_status(_span_input(canonical_span))
+        status_code, description = span_status(_span_input(canonical_span), redact=self._config.redact)
         span.set_status(Status(status_code, description))
         if description:
             span.record_exception(RuntimeError(description))
@@ -188,5 +203,4 @@ __all__ = [
     "UnifiedFutureAGITrace",
     "collector_endpoint",
     "setup_unified_tracer",
-    "trace_id_from_message_id",
 ]

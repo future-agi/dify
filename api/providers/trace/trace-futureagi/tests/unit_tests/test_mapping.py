@@ -8,7 +8,6 @@ from dify_trace_futureagi.mapping import (
     resource_attributes,
     span_attributes,
     span_status,
-    trace_id_from_message_id,
 )
 from dify_trace_futureagi.span_input import SpanInput, SpanKind, SpanStatus, TraceInput
 from opentelemetry.trace import StatusCode
@@ -72,18 +71,21 @@ class TestMapping:
         assert "secret_key" not in attributes
 
     def test_error_status_keeps_the_message(self):
-        code, description = span_status(_span(status=SpanStatus.ERROR, error="boom"))
+        code, description = span_status(_span(status=SpanStatus.ERROR, error="boom"), redact=False)
         assert code is StatusCode.ERROR
         assert description == "boom"
 
-    def test_error_status_does_not_invent_a_message(self):
-        code, description = span_status(_span(status=SpanStatus.ERROR, error=None))
+    def test_redact_keeps_error_status_but_drops_the_error_text(self):
+        """Dify error text can quote the user's input, e.g. a tool repeating its bad argument."""
+        span = _span(status=SpanStatus.ERROR, error="Failed to invoke tool time: 'Mars/secret-input'")
+        code, description = span_status(span, redact=True)
         assert code is StatusCode.ERROR
         assert description is None
 
-    def test_same_message_id_same_trace_bytes(self):
-        assert trace_id_from_message_id("message-9") == trace_id_from_message_id("message-9")
-        assert trace_id_from_message_id("message-9") != trace_id_from_message_id("message-10")
+    def test_error_status_does_not_invent_a_message(self):
+        code, description = span_status(_span(status=SpanStatus.ERROR, error=None), redact=False)
+        assert code is StatusCode.ERROR
+        assert description is None
 
     def test_two_configs_keep_separate_headers(self):
         assert auth_headers("key-a", "secret-a") != auth_headers("key-b", "secret-b")

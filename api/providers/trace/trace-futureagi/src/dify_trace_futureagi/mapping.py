@@ -5,7 +5,6 @@ database, Redis, or a running collector.
 """
 
 import json
-import uuid
 from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
@@ -23,15 +22,6 @@ _KIND_MAP: dict[SpanKind, str] = {
 }
 
 _METADATA_KEYS = ("app_id", "app_mode", "tenant_id", "version")
-
-
-def trace_id_from_message_id(message_id: str) -> int:
-    """Stable 16-byte trace id from a Dify message or workflow run id.
-
-    The same id always yields the same bytes, so a retried trace lands on
-    the same Observe trace instead of a new one.
-    """
-    return uuid.uuid5(uuid.NAMESPACE_URL, f"dify:{message_id}").int
 
 
 def nanos(value: datetime | None) -> int | None:
@@ -144,9 +134,14 @@ def span_attributes(span: SpanInput, trace: TraceInput, *, redact: bool) -> dict
     return attributes
 
 
-def span_status(span: SpanInput) -> tuple[StatusCode, str | None]:
+def span_status(span: SpanInput, *, redact: bool) -> tuple[StatusCode, str | None]:
+    """OTel status for a canonical span.
+
+    Dify's error text often quotes the user's input (a tool error repeats the bad
+    argument), so with redact on the span is still ERROR but carries no message.
+    """
     if span.status is SpanStatus.ERROR:
-        return StatusCode.ERROR, span.error
+        return StatusCode.ERROR, None if redact else span.error
     return StatusCode.OK, None
 
 
