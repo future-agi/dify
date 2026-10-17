@@ -11,6 +11,7 @@ from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExportResult
 from opentelemetry.trace import StatusCode
 
+from configs import dify_config
 from core.ops.exceptions import RetryableTraceDispatchError
 from core.ops.unified_trace.entities import CanonicalSpan, CanonicalSpanKind, CanonicalSpanStatus, CanonicalTrace
 
@@ -158,10 +159,11 @@ def test_exporter_never_compresses_even_when_the_env_asks_for_gzip(monkeypatch: 
     assert "Content-Encoding" not in exporter._session.headers
 
 
-def test_resource_carries_only_the_project_attributes():
+def test_resource_carries_the_project_and_the_dify_release_only():
     tracer, _ = setup_unified_tracer(_config())
     exporter = _Exporter()
     UnifiedFutureAGIAdapter(_config(), tracer=tracer, exporter=exporter).emit(  # type: ignore[arg-type]
         _workflow_trace(), None, lambda *_: None
     )
-    assert dict(exporter.spans[0].resource.attributes) == {"project_name": "proj", "project_type": "observe"}
+    resource = dict(exporter.spans[0].resource.attributes)
+    assert resource == {"project_name": "proj", "project_type": "observe", "dify.version": dify_config.project.version}

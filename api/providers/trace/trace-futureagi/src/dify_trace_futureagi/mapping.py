@@ -21,7 +21,14 @@ _KIND_MAP: dict[SpanKind, str] = {
     SpanKind.AGENT: "AGENT",
 }
 
-_METADATA_KEYS = ("app_id", "app_mode", "tenant_id", "version")
+# Dify trace metadata key -> exported attribute. Dify's "version" is the workflow
+# version (a publish timestamp), not the Dify release; the release goes on the resource.
+_METADATA_ATTRIBUTES = {
+    "app_id": "dify.app_id",
+    "app_mode": "dify.app_mode",
+    "tenant_id": "dify.tenant_id",
+    "version": "dify.workflow_version",
+}
 
 
 def nanos(value: datetime | None) -> int | None:
@@ -100,10 +107,10 @@ def span_attributes(span: SpanInput, trace: TraceInput, *, redact: bool) -> dict
         attributes["session.id"] = trace.session_id
         attributes["gen_ai.conversation.id"] = trace.session_id
     metadata = span.metadata
-    for key in _METADATA_KEYS:
+    for key, target in _METADATA_ATTRIBUTES.items():
         value = metadata.get(key)
         if value is not None:
-            attributes[f"dify.{key}"] = value
+            attributes[target] = value
     user_id = metadata.get("user_id")
     if user_id is not None:
         attributes["user.id"] = user_id
@@ -145,9 +152,13 @@ def span_status(span: SpanInput, *, redact: bool) -> tuple[StatusCode, str | Non
     return StatusCode.OK, None
 
 
-def resource_attributes(project: str) -> dict[str, str]:
-    """The two attributes fi-collector requires. openinference.project.name is not a substitute."""
-    return {"project_name": project, "project_type": "observe"}
+def resource_attributes(project: str, dify_version: str | None) -> dict[str, str]:
+    """project_name and project_type are what fi-collector requires; openinference.project.name
+    is not a substitute. dify.version is the Dify release when the caller knows it."""
+    attributes = {"project_name": project, "project_type": "observe"}
+    if dify_version:
+        attributes["dify.version"] = dify_version
+    return attributes
 
 
 def auth_headers(api_key: str | None, secret_key: str | None) -> Mapping[str, str]:

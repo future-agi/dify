@@ -15,6 +15,7 @@ from opentelemetry.sdk.trace.export import SpanExportResult
 from opentelemetry.trace import Span, Status, set_span_in_context
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
+from configs import dify_config
 from core.ops.exceptions import InvalidTraceParentContextError, RetryableTraceDispatchError
 from core.ops.unified_trace.entities import CanonicalSpan, CanonicalTrace
 from core.ops.unified_trace.parent_context import (
@@ -81,7 +82,7 @@ def setup_unified_tracer(config: FutureAGIConfig) -> tuple[trace_sdk.Tracer, OTL
         compression=Compression.NoCompression,
     )
     provider = trace_sdk.TracerProvider(
-        resource=Resource(attributes=resource_attributes(config.project or "")),
+        resource=Resource(attributes=resource_attributes(config.project or "", dify_config.project.version)),
         id_generator=StableIdGenerator(),
     )
     return cast(trace_sdk.Tracer, provider.get_tracer(f"unified_futureagi_{config.project}")), exporter

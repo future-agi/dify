@@ -92,9 +92,18 @@ class TestMapping:
         assert auth_headers("key-a", "secret-a") == {"X-Api-Key": "key-a", "X-Secret-Key": "secret-a"}
 
     def test_resource_requires_project_name(self):
-        attributes = resource_attributes("proj-a")
+        attributes = resource_attributes("proj-a", None)
         assert attributes == {"project_name": "proj-a", "project_type": "observe"}
         assert "openinference.project.name" not in attributes
+        assert resource_attributes("proj-a", "1.17.1")["dify.version"] == "1.17.1"
+
+    def test_workflow_version_is_not_reported_as_the_dify_version(self):
+        """Dify's trace metadata "version" is the workflow version (a publish timestamp)."""
+        span = _span(kind=SpanKind.CHAIN, metadata={"version": "2026-10-17 07:37:48.102997", "app_id": "app-1"})
+        attributes = span_attributes(span, _trace(span), redact=False)
+        assert attributes["dify.workflow_version"] == "2026-10-17 07:37:48.102997"
+        assert "dify.version" not in attributes
+        assert attributes["dify.app_id"] == "app-1"
 
     def test_collector_path(self):
         from dify_trace_futureagi.defaults import collector_endpoint
