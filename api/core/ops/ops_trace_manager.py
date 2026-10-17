@@ -334,6 +334,16 @@ class OpsTraceProviderConfigMap(collections.UserDict[str, TracingProviderConfigE
                         "other_keys": ["endpoint", "service_name"],
                         "trace_instance": TencentDataTrace,
                     }
+                case TracingProviderEnum.FUTUREAGI:
+                    from dify_trace_futureagi.config import FutureAGIConfig
+                    from dify_trace_futureagi.futureagi_trace import FutureAGIDataTrace
+
+                    return {
+                        "config_class": FutureAGIConfig,
+                        "secret_keys": ["api_key", "secret_key"],
+                        "other_keys": ["project", "endpoint", "redact"],
+                        "trace_instance": FutureAGIDataTrace,
+                    }
 
                 case _:
                     raise KeyError(f"Unsupported tracing provider: {key}")

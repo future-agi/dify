@@ -31,6 +31,7 @@ const getIconClassName = (type: TracingProvider) => {
     [TracingProvider.mlflow]: 'i-custom-public-tracing-mlflow-icon-big w-16.25',
     [TracingProvider.databricks]: 'i-custom-public-tracing-databricks-icon-big w-37.5',
     [TracingProvider.tencent]: 'i-custom-public-tracing-tencent-icon-big w-30',
+    [TracingProvider.futureagi]: '',
   }[type]
 }
 
@@ -87,6 +88,9 @@ const ProviderPanel: FC<Props> = ({
       <div className="flex items-center justify-between space-x-1">
         <div className="flex items-center">
           <span aria-hidden className={cn(iconClassName, 'h-6')} />
+          {type === TracingProvider.futureagi && (
+            <span className="system-sm-semibold text-text-secondary">Future AGI</span>
+          )}
           {isChosen && (
             <div className="ml-1 flex h-4 items-center rounded-sm border border-text-accent-secondary px-1 system-2xs-medium-uppercase text-text-accent-secondary">
               {t(($) => $[`${I18N_PREFIX}.inUse`], { ns: 'app' })}

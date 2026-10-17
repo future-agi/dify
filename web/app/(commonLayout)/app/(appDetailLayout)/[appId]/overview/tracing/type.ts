@@ -9,6 +9,7 @@ export const TracingProvider = {
   mlflow: 'mlflow',
   databricks: 'databricks',
   tencent: 'tencent',
+  futureagi: 'futureagi',
 } as const
 
 export type TracingProvider = (typeof TracingProvider)[keyof typeof TracingProvider]
@@ -72,6 +73,14 @@ export type DatabricksConfig = {
   client_id: string
   client_secret: string
   personal_access_token: string
+}
+
+export type FutureAGIConfig = {
+  api_key: string
+  secret_key: string
+  project: string
+  endpoint: string
+  redact: boolean
 }
 
 export type TencentConfig = {

@@ -1,0 +1,12 @@
+[project]
+name = "dify-trace-futureagi"
+version = "0.0.1"
+dependencies = [
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-http",
+]
+description = "Dify ops tracing provider (Future AGI)."
+
+[tool.setuptools.packages.find]
+where = ["src"]

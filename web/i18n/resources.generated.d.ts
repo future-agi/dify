@@ -765,6 +765,8 @@ export default interface Resources {
     'tracing.disabled': 'Disabled'
     'tracing.disabledTip': 'Please config provider first'
     'tracing.enabled': 'In Service'
+    'tracing.futureagi.description': 'Send app traces to Future AGI. Self-hosted Dify only; not available on Dify Cloud until this provider is in an upstream release.'
+    'tracing.futureagi.title': 'Future AGI'
     'tracing.inUse': 'In use'
     'tracing.langfuse.description': 'Open-source LLM observability, evaluation, prompt management and metrics to debug and improve your LLM application.'
     'tracing.langfuse.title': 'Langfuse'

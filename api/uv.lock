@@ -13,6 +13,7 @@ members = [
     "dify-api",
     "dify-trace-aliyun",
     "dify-trace-arize-phoenix",
+    "dify-trace-futureagi",
     "dify-trace-langfuse",
     "dify-trace-langsmith",
     "dify-trace-mlflow",
@@ -1486,6 +1487,7 @@ trace-aliyun = [
 trace-all = [
     { name = "dify-trace-aliyun" },
     { name = "dify-trace-arize-phoenix" },
+    { name = "dify-trace-futureagi" },
     { name = "dify-trace-langfuse" },
     { name = "dify-trace-langsmith" },
     { name = "dify-trace-mlflow" },
@@ -1495,6 +1497,9 @@ trace-all = [
 ]
 trace-arize-phoenix = [
     { name = "dify-trace-arize-phoenix" },
+]
+trace-futureagi = [
+    { name = "dify-trace-futureagi" },
 ]
 trace-langfuse = [
     { name = "dify-trace-langfuse" },
@@ -1772,6 +1777,7 @@ trace-aliyun = [{ name = "dify-trace-aliyun", editable = "providers/trace/trace-
 trace-all = [
     { name = "dify-trace-aliyun", editable = "providers/trace/trace-aliyun" },
     { name = "dify-trace-arize-phoenix", editable = "providers/trace/trace-arize-phoenix" },
+    { name = "dify-trace-futureagi", editable = "providers/trace/trace-futureagi" },
     { name = "dify-trace-langfuse", editable = "providers/trace/trace-langfuse" },
     { name = "dify-trace-langsmith", editable = "providers/trace/trace-langsmith" },
     { name = "dify-trace-mlflow", editable = "providers/trace/trace-mlflow" },
@@ -1780,6 +1786,7 @@ trace-all = [
     { name = "dify-trace-weave", editable = "providers/trace/trace-weave" },
 ]
 trace-arize-phoenix = [{ name = "dify-trace-arize-phoenix", editable = "providers/trace/trace-arize-phoenix" }]
+trace-futureagi = [{ name = "dify-trace-futureagi", editable = "providers/trace/trace-futureagi" }]
 trace-langfuse = [{ name = "dify-trace-langfuse", editable = "providers/trace/trace-langfuse" }]
 trace-langsmith = [{ name = "dify-trace-langsmith", editable = "providers/trace/trace-langsmith" }]
 trace-mlflow = [{ name = "dify-trace-mlflow", editable = "providers/trace/trace-mlflow" }]
@@ -1879,6 +1886,23 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "arize-phoenix-otel", specifier = "==0.15.0" }]
+
+[[package]]
+name = "dify-trace-futureagi"
+version = "0.0.1"
+source = { editable = "providers/trace/trace-futureagi" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
+]
 
 [[package]]
 name = "dify-trace-langfuse"

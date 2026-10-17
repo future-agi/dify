@@ -4,6 +4,7 @@ import type {
   AliyunConfig,
   ArizeConfig,
   DatabricksConfig,
+  FutureAGIConfig,
   LangFuseConfig,
   LangSmithConfig,
   MLflowConfig,
@@ -24,6 +25,7 @@ import {
 import { Button } from '@langgenius/dify-ui/button'
 import { Dialog, DialogContent } from '@langgenius/dify-ui/dialog'
 import { Separator } from '@langgenius/dify-ui/separator'
+import { Switch } from '@langgenius/dify-ui/switch'
 import { useBoolean } from 'ahooks'
 import * as React from 'react'
 import { useCallback, useState } from 'react'
@@ -48,6 +50,7 @@ type Props = Readonly<{
     | MLflowConfig
     | DatabricksConfig
     | TencentConfig
+    | FutureAGIConfig
     | null
   onRemoved: () => void
   onCancel: () => void
@@ -62,7 +65,8 @@ type Props = Readonly<{
       | AliyunConfig
       | MLflowConfig
       | DatabricksConfig
-      | TencentConfig,
+      | TencentConfig
+      | FutureAGIConfig,
   ) => void
   onChosen: (provider: TracingProvider) => void
 }>
@@ -136,6 +140,14 @@ const tencentConfigTemplate = {
   service_name: '',
 }
 
+const futureagiConfigTemplate = {
+  api_key: '',
+  secret_key: '',
+  project: '',
+  endpoint: '',
+  redact: false,
+}
+
 const ProviderConfigModal: FC<Props> = ({
   appId,
   type,
@@ -160,6 +172,7 @@ const ProviderConfigModal: FC<Props> = ({
     | MLflowConfig
     | DatabricksConfig
     | TencentConfig
+    | FutureAGIConfig
   >(
     (() => {
       if (isEdit) return payload
@@ -173,6 +186,7 @@ const ProviderConfigModal: FC<Props> = ({
       else if (type === TracingProvider.mlflow) return mlflowConfigTemplate
       else if (type === TracingProvider.databricks) return databricksConfigTemplate
       else if (type === TracingProvider.tencent) return tencentConfigTemplate
+      else if (type === TracingProvider.futureagi) return futureagiConfigTemplate
 
       return weaveConfigTemplate
     })(),
@@ -317,6 +331,22 @@ const ProviderConfigModal: FC<Props> = ({
         errorMessage = t(($) => $['errorMsg.fieldRequired'], {
           ns: 'common',
           field: 'Service Name',
+        })
+    }
+
+    if (type === TracingProvider.futureagi) {
+      const postData = config as FutureAGIConfig
+      if (!postData.api_key)
+        errorMessage = t(($) => $['errorMsg.fieldRequired'], { ns: 'common', field: 'API Key' })
+      if (!errorMessage && !postData.secret_key)
+        errorMessage = t(($) => $['errorMsg.fieldRequired'], {
+          ns: 'common',
+          field: t(($) => $[`${I18N_PREFIX}.secretKey`], { ns: 'app' }),
+        })
+      if (!errorMessage && !postData.project)
+        errorMessage = t(($) => $['errorMsg.fieldRequired'], {
+          ns: 'common',
+          field: t(($) => $[`${I18N_PREFIX}.project`], { ns: 'app' }),
         })
     }
 
@@ -629,6 +659,60 @@ const ProviderConfigModal: FC<Props> = ({
                           onChange={handleConfigChange('host')}
                           placeholder="https://cloud.langfuse.com"
                         />
+                      </>
+                    )}
+                    {type === TracingProvider.futureagi && (
+                      <>
+                        <Field
+                          label="API Key"
+                          labelClassName="text-sm!"
+                          value={(config as FutureAGIConfig).api_key}
+                          isRequired
+                          onChange={handleConfigChange('api_key')}
+                          placeholder={t(($) => $[`${I18N_PREFIX}.placeholder`], {
+                            ns: 'app',
+                            key: 'API Key',
+                          })!}
+                        />
+                        <Field
+                          label={t(($) => $[`${I18N_PREFIX}.secretKey`], { ns: 'app' })!}
+                          labelClassName="text-sm!"
+                          value={(config as FutureAGIConfig).secret_key}
+                          isRequired
+                          onChange={handleConfigChange('secret_key')}
+                          placeholder={t(($) => $[`${I18N_PREFIX}.placeholder`], {
+                            ns: 'app',
+                            key: t(($) => $[`${I18N_PREFIX}.secretKey`], { ns: 'app' }),
+                          })!}
+                        />
+                        <Field
+                          label={t(($) => $[`${I18N_PREFIX}.project`], { ns: 'app' })!}
+                          labelClassName="text-sm!"
+                          value={(config as FutureAGIConfig).project}
+                          isRequired
+                          onChange={handleConfigChange('project')}
+                          placeholder={t(($) => $[`${I18N_PREFIX}.placeholder`], {
+                            ns: 'app',
+                            key: t(($) => $[`${I18N_PREFIX}.project`], { ns: 'app' }),
+                          })!}
+                        />
+                        <Field
+                          label="Endpoint"
+                          labelClassName="text-sm!"
+                          value={(config as FutureAGIConfig).endpoint}
+                          onChange={handleConfigChange('endpoint')}
+                          placeholder="https://api.futureagi.com"
+                        />
+                        <div className="flex items-center justify-between py-1.75">
+                          <span className="text-sm font-medium text-text-primary">
+                            Redact inputs and outputs
+                          </span>
+                          <Switch
+                            aria-label="Redact inputs and outputs"
+                            checked={!!(config as FutureAGIConfig).redact}
+                            onCheckedChange={(checked) => setConfig({ ...config, redact: checked })}
+                          />
+                        </div>
                       </>
                     )}
                     {type === TracingProvider.opik && (

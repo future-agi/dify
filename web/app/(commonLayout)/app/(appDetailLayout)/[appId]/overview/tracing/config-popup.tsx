@@ -4,6 +4,7 @@ import type {
   AliyunConfig,
   ArizeConfig,
   DatabricksConfig,
+  FutureAGIConfig,
   LangFuseConfig,
   LangSmithConfig,
   MLflowConfig,
@@ -45,6 +46,7 @@ export type PopupProps = {
   mlflowConfig: MLflowConfig | null
   databricksConfig: DatabricksConfig | null
   tencentConfig: TencentConfig | null
+  futureagiConfig: FutureAGIConfig | null
   onConfigUpdated: (
     provider: TracingProvider,
     payload:
@@ -57,7 +59,8 @@ export type PopupProps = {
       | AliyunConfig
       | TencentConfig
       | MLflowConfig
-      | DatabricksConfig,
+      | DatabricksConfig
+      | FutureAGIConfig,
   ) => void
   onConfigRemoved: (provider: TracingProvider) => void
 }
@@ -79,6 +82,7 @@ const ConfigPopup: FC<PopupProps> = ({
   mlflowConfig,
   databricksConfig,
   tencentConfig,
+  futureagiConfig,
   onConfigUpdated,
   onConfigRemoved,
 }) => {
@@ -120,7 +124,8 @@ const ConfigPopup: FC<PopupProps> = ({
         | AliyunConfig
         | MLflowConfig
         | DatabricksConfig
-        | TencentConfig,
+        | TencentConfig
+        | FutureAGIConfig,
     ) => {
       onConfigUpdated(currentProvider!, payload)
       hideConfigModal()
@@ -143,7 +148,8 @@ const ConfigPopup: FC<PopupProps> = ({
     aliyunConfig &&
     mlflowConfig &&
     databricksConfig &&
-    tencentConfig
+    tencentConfig &&
+    futureagiConfig
   const providerAllNotConfigured =
     !arizeConfig &&
     !phoenixConfig &&
@@ -154,7 +160,8 @@ const ConfigPopup: FC<PopupProps> = ({
     !aliyunConfig &&
     !mlflowConfig &&
     !databricksConfig &&
-    !tencentConfig
+    !tencentConfig &&
+    !futureagiConfig
 
   const switchContent = (
     <Switch
@@ -293,6 +300,19 @@ const ConfigPopup: FC<PopupProps> = ({
       key="tencent-provider-panel"
     />
   )
+
+  const futureagiPanel = (
+    <ProviderPanel
+      type={TracingProvider.futureagi}
+      readOnly={readOnly}
+      config={futureagiConfig}
+      hasConfigured={!!futureagiConfig}
+      onConfig={handleOnConfig(TracingProvider.futureagi)}
+      isChosen={chosenProvider === TracingProvider.futureagi}
+      onChoose={handleOnChoose(TracingProvider.futureagi)}
+      key="futureagi-provider-panel"
+    />
+  )
   const configuredProviderPanel = () => {
     const configuredPanels: JSX.Element[] = []
 
@@ -315,6 +335,8 @@ const ConfigPopup: FC<PopupProps> = ({
     if (databricksConfig) configuredPanels.push(databricksPanel)
 
     if (tencentConfig) configuredPanels.push(tencentPanel)
+
+    if (futureagiConfig) configuredPanels.push(futureagiPanel)
 
     return configuredPanels
   }
@@ -342,6 +364,8 @@ const ConfigPopup: FC<PopupProps> = ({
 
     if (!tencentConfig) notConfiguredPanels.push(tencentPanel)
 
+    if (!futureagiConfig) notConfiguredPanels.push(futureagiPanel)
+
     return notConfiguredPanels
   }
 
@@ -355,6 +379,7 @@ const ConfigPopup: FC<PopupProps> = ({
     if (currentProvider === TracingProvider.opik) return opikConfig
     if (currentProvider === TracingProvider.aliyun) return aliyunConfig
     if (currentProvider === TracingProvider.tencent) return tencentConfig
+    if (currentProvider === TracingProvider.futureagi) return futureagiConfig
     return weaveConfig
   }
 
@@ -421,6 +446,7 @@ const ConfigPopup: FC<PopupProps> = ({
               {phoenixPanel}
               {aliyunPanel}
               {tencentPanel}
+              {futureagiPanel}
             </div>
           </>
         ) : (

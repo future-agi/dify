@@ -2,6 +2,7 @@ import type {
   AliyunConfig,
   ArizeConfig,
   DatabricksConfig,
+  FutureAGIConfig,
   LangFuseConfig,
   LangSmithConfig,
   MLflowConfig,
@@ -32,6 +33,7 @@ type ProviderPayload =
   | AliyunConfig
   | ArizeConfig
   | DatabricksConfig
+  | FutureAGIConfig
   | LangFuseConfig
   | LangSmithConfig
   | MLflowConfig
@@ -98,6 +100,13 @@ const validConfigs = {
     endpoint: 'https://your-region.cls.tencentcs.com',
     service_name: 'dify_app',
   },
+  [TracingProvider.futureagi]: {
+    api_key: 'futureagi-api-key',
+    secret_key: 'futureagi-secret-key',
+    project: 'futureagi-project',
+    endpoint: 'https://api.futureagi.com',
+    redact: false,
+  },
 } satisfies Record<TracingProvider, ProviderPayload>
 
 const providerFieldLabels = [
@@ -137,6 +146,15 @@ const providerFieldLabels = [
     ],
   ],
   [TracingProvider.tencent, ['Token', 'Endpoint', 'Service Name']],
+  [
+    TracingProvider.futureagi,
+    [
+      'API Key',
+      'app.tracing.configProvider.secretKey',
+      'app.tracing.configProvider.project',
+      'Endpoint',
+    ],
+  ],
 ] as const
 
 const invalidConfigCases: Array<{
@@ -249,6 +267,21 @@ const invalidConfigCases: Array<{
     payload: { ...validConfigs[TracingProvider.tencent], service_name: '' },
     missingField: 'Service Name',
   },
+  {
+    provider: TracingProvider.futureagi,
+    payload: { ...validConfigs[TracingProvider.futureagi], api_key: '' },
+    missingField: 'API Key',
+  },
+  {
+    provider: TracingProvider.futureagi,
+    payload: { ...validConfigs[TracingProvider.futureagi], secret_key: '' },
+    missingField: 'app.tracing.configProvider.secretKey',
+  },
+  {
+    provider: TracingProvider.futureagi,
+    payload: { ...validConfigs[TracingProvider.futureagi], project: '' },
+    missingField: 'app.tracing.configProvider.project',
+  },
 ]
 
 const renderConfigButton = () => {
@@ -271,6 +304,7 @@ const renderConfigButton = () => {
       mlflowConfig={null}
       databricksConfig={null}
       tencentConfig={null}
+      futureagiConfig={null}
       onConfigUpdated={vi.fn()}
       onConfigRemoved={vi.fn()}
     >
@@ -345,6 +379,20 @@ describe('ProviderConfigModal', () => {
     })
   })
 
+  describe('Provider List', () => {
+    it('should offer Future AGI before any provider is configured', async () => {
+      const user = userEvent.setup()
+      renderConfigButton()
+
+      await user.click(screen.getByRole('button', { name: 'Open tracing' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('Future AGI')).toBeInTheDocument()
+      })
+      expect(screen.getByText('app.tracing.futureagi.description')).toBeInTheDocument()
+    })
+  })
+
   describe('Rendering', () => {
     it.each(providerFieldLabels)(
       'should render %s fields when adding a provider',
@@ -392,6 +440,39 @@ describe('ProviderConfigModal', () => {
       expect(callbacks.onSaved).toHaveBeenCalledWith(validConfigs[TracingProvider.langfuse])
       expect(callbacks.onChosen).toHaveBeenCalledWith(TracingProvider.langfuse)
       expect(toast).toHaveBeenCalledWith('common.api.success', { type: 'success' })
+    })
+
+    it('should send the Future AGI redact switch with the config', async () => {
+      const user = userEvent.setup()
+      renderProviderConfigModal({ type: TracingProvider.futureagi })
+
+      await user.type(screen.getByRole('textbox', { name: 'API Key' }), 'futureagi-api-key')
+      await user.type(
+        screen.getByRole('textbox', { name: 'app.tracing.configProvider.secretKey' }),
+        'futureagi-secret-key',
+      )
+      await user.type(
+        screen.getByRole('textbox', { name: 'app.tracing.configProvider.project' }),
+        'futureagi-project',
+      )
+      await user.click(screen.getByRole('switch', { name: 'Redact inputs and outputs' }))
+      await user.click(screen.getByRole('button', { name: 'common.operation.saveAndEnable' }))
+
+      await waitFor(() => {
+        expect(addTracingConfig).toHaveBeenCalledWith({
+          appId: 'app-id',
+          body: {
+            tracing_provider: TracingProvider.futureagi,
+            tracing_config: {
+              api_key: 'futureagi-api-key',
+              secret_key: 'futureagi-secret-key',
+              project: 'futureagi-project',
+              endpoint: '',
+              redact: true,
+            },
+          },
+        })
+      })
     })
 
     it.each(Object.values(TracingProvider))(
